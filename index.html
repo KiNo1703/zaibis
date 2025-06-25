@@ -93,7 +93,7 @@
 </head>
 <body>
     <button class="big-red-button" id="awesomeButton">Заебись!</button>
-    <div class="counter" id="counter">Нажато: 0</div>
+    <div class="counter" id="counter">Сколько раз заебись: 0</div>
     <div class="record" id="record">Рекорд: 0/сек</div>
     <div class="settings">
         <button id="soundToggle">🔊 Звук ВКЛ</button>
@@ -135,7 +135,7 @@
         button.addEventListener('click', function(e) {
             clickCount++;
             clicksInLastSecond++;
-            counterElement.textContent = `Нажато: ${clickCount}`;
+            counterElement.textContent = `Сколько раз заебись: ${clickCount}`;
             
             // Звук
             if (soundEnabled) {
