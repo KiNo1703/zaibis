@@ -51,24 +51,43 @@
             transform: scale(1.02);
         }
         .big-red-button:active {
-            transform: scale(0.95) rotate(2deg);
+            transform: scale(0.95);
         }
         .counter {
             font-size: 24px;
             font-weight: bold;
             margin: 10px;
         }
-        .record {
-            font-size: 18px;
-            color: #ff5722;
-            margin-bottom: 20px;
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            z-index: 0;
+        }
+        @keyframes shake-screen {
+            0%, 100% { transform: translate(0, 0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-10px, 10px); }
+            20%, 40%, 60%, 80% { transform: translate(10px, -10px); }
+        }
+        .shake-screen {
+            animation: shake-screen 0.5s;
+        }
+        @keyframes rainbow-bg {
+            0% { background-color: #ff0000; }
+            14% { background-color: #ff7f00; }
+            28% { background-color: #ffff00; }
+            42% { background-color: #00ff00; }
+            57% { background-color: #0000ff; }
+            71% { background-color: #4b0082; }
+            85% { background-color: #9400d3; }
+            100% { background-color: #ff0000; }
+        }
+        .rainbow-mode {
+            animation: rainbow-bg 2s infinite;
         }
         .settings {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            display: flex;
-            gap: 10px;
         }
         .settings button {
             padding: 8px 12px;
@@ -78,84 +97,77 @@
             background: #555;
             color: white;
         }
-        .particle {
-            position: absolute;
-            pointer-events: none;
-            z-index: 0;
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        .shake { animation: shake 0.2s infinite; }
     </style>
 </head>
 <body>
     <button class="big-red-button" id="awesomeButton">Заебись!</button>
-    <div class="counter" id="counter">Сколько раз заебись: 0</div>
-    <div class="record" id="record">Рекорд: 0/сек</div>
+    <div class="counter" id="counter">Нажато: 0</div>
     <div class="settings">
-        <button id="soundToggle">🔊 Звук ВКЛ</button>
         <button id="themeToggle">🌓 Тема</button>
     </div>
-
-    <audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3" preload="auto"></audio>
 
     <script>
         // Элементы
         const button = document.getElementById('awesomeButton');
         const counterElement = document.getElementById('counter');
-        const recordElement = document.getElementById('record');
-        const soundToggle = document.getElementById('soundToggle');
         const themeToggle = document.getElementById('themeToggle');
-        const clickSound = document.getElementById('clickSound');
         
         // Настройки
         let clickCount = 0;
-        let maxClicksPerSecond = 0;
-        let clicksInLastSecond = 0;
-        let soundEnabled = true;
-        let darkMode = false;
+        let hardcoreMode = false;
+        let escapeSpeed = 0;
+        let rapidClicks = 0;
         let lastClickTime = 0;
+        let darkMode = false;
         
         // Цвета для частиц
         const colors = ['#ff0000', '#ffff00', '#00ff00', '#00ffff', '#ff00ff', '#ff8800', '#ff0088', '#ffffff'];
         
-        // Таймер для рекорда
-        setInterval(() => {
-            if (clicksInLastSecond > maxClicksPerSecond) {
-                maxClicksPerSecond = clicksInLastSecond;
-                recordElement.textContent = `Рекорд: ${maxClicksPerSecond}/сек`;
-            }
-            clicksInLastSecond = 0;
-        }, 1000);
-        
         // Обработчик клика
         button.addEventListener('click', function(e) {
             clickCount++;
-            clicksInLastSecond++;
-            counterElement.textContent = `Сколько раз заебись: ${clickCount}`;
+            counterElement.textContent = `Нажато: ${clickCount}`;
             
-            // Звук
-            if (soundEnabled) {
-                clickSound.currentTime = 0;
-                clickSound.play();
+            // Тряска экрана
+            document.body.classList.add('shake-screen');
+            setTimeout(() => document.body.classList.remove('shake-screen'), 500);
+            
+            // Адский режим (после 10 кликов)
+            if (clickCount >= 10 && !hardcoreMode) {
+                hardcoreMode = true;
+                button.textContent = "ПОЙМАЙ МЕНЯ!";
+                document.body.classList.add('rainbow-mode');
             }
             
-            // Анимация кнопки
-            button.classList.add('shake');
-            setTimeout(() => button.classList.remove('shake'), 200);
-            
-            // Салют в зависимости от скорости кликов
+            // Easter Egg (5 быстрых кликов)
             const now = Date.now();
-            const timeSinceLastClick = now - lastClickTime;
+            if (now - lastClickTime < 300) rapidClicks++;
+            else rapidClicks = 0;
+            
             lastClickTime = now;
             
-            if (timeSinceLastClick < 200) { // Если клики быстрые
-                createFireworks(e.clientX, e.clientY, 150, true); // Больше частиц + конфетти
+            if (rapidClicks >= 4) { // 5 кликов (0-4)
+                rapidClicks = 0;
+                createFireworks(
+                    window.innerWidth / 2, 
+                    window.innerHeight / 2, 
+                    300, 
+                    true
+                );
             } else {
-                createFireworks(e.clientX, e.clientY, 80, false); // Обычный салют
+                createFireworks(e.clientX, e.clientY, 80, false);
+            }
+        });
+        
+        // Адский режим - кнопка убегает
+        button.addEventListener('mouseover', function() {
+            if (hardcoreMode) {
+                const x = Math.random() * (window.innerWidth - 200);
+                const y = Math.random() * (window.innerHeight - 200);
+                button.style.position = 'absolute';
+                button.style.left = x + 'px';
+                button.style.top = y + 'px';
+                escapeSpeed += 5;
             }
         });
         
@@ -165,7 +177,6 @@
                 const particle = document.createElement('div');
                 particle.classList.add('particle');
                 
-                // Случайная форма (круг или квадрат)
                 if (Math.random() > 0.7) {
                     particle.style.borderRadius = '0';
                     particle.style.width = '12px';
@@ -201,7 +212,6 @@
                         return;
                     }
                     
-                    // Разные траектории для конфетти и салюта
                     if (isConfetti) {
                         posX = startX + Math.cos(angle) * velocity * progress * 80;
                         posY = startY + Math.sin(angle) * velocity * progress * 80 + progress * 200;
@@ -221,12 +231,6 @@
                 animate();
             }
         }
-        
-        // Переключение звука
-        soundToggle.addEventListener('click', () => {
-            soundEnabled = !soundEnabled;
-            soundToggle.textContent = soundEnabled ? '🔊 Звук ВКЛ' : '🔇 Звук ВЫКЛ';
-        });
         
         // Переключение темы
         themeToggle.addEventListener('click', () => {
